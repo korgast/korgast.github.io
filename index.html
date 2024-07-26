@@ -1,5 +1,58 @@
-<p>Hello World!</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Flight Connect API</title>
+</head>
+<body>
+    <h1>Infinite Flight Connect API Data</h1>
+    <pre id="output"></pre>
 
-<p>This is a test site for playing with Infinite Flight API.</p>
+    <p>Hello World!</p>
+    <p>This is a test site for playing with Infinite Flight API.</p>
+    <p>© korgast</p>
 
-<p>© korgast</p>
+    <script>
+        // 修改为Infinite Flight设备的IP地址
+        const deviceIpAddress = '192.168.1.100'; // 替换为实际IP地址
+        const apiPort = 10112; // Connect API v2的端口
+
+        // 创建WebSocket连接
+        const ws = new WebSocket(`ws://${deviceIpAddress}:${apiPort}`);
+
+        ws.onopen = () => {
+            console.log('WebSocket connection opened');
+            document.getElementById('output').textContent = 'WebSocket connection opened';
+
+            // 请求航空器是否在地面状态
+            const request = {
+                Command: 'GetState',
+                Arguments: ['aircraft/0/is_on_ground']
+            };
+            ws.send(JSON.stringify(request));
+        };
+
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            console.log('Message from server', message);
+            document.getElementById('output').textContent += `\n${event.data}`;
+
+            if (message.Command === 'State' && message.State === 'aircraft/0/is_on_ground') {
+                const isOnGround = message.Value;
+                document.getElementById('output').textContent += `\nAircraft is ${isOnGround ? 'on the ground' : 'in the air'}`;
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error', error);
+            document.getElementById('output').textContent += `\nWebSocket error: ${error}`;
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed');
+            document.getElementById('output').textContent += '\nWebSocket connection closed';
+        };
+    </script>
+</body>
+</html>
