@@ -13,11 +13,11 @@
 
     <pre id="output"></pre>
     
-    <p>v0.0.0009 2024/07/27 11.14Z © korgast</p>
+    <p>v0.0.0010 2024/07/27 09.22Z © korgast</p>
 
     <script>
         // 修改为Infinite Flight设备的IP地址
-        const deviceIpAddress = '10.10.9.6'; // 替换为实际IP地址
+        const deviceIpAddress = '192.168.1.100'; // 替换为实际IP地址
         const apiPort = 10112; // Connect API v2的端口
 
         // 创建WebSocket连接
@@ -46,14 +46,20 @@
             }
         };
 
-        ws.onerror = (error) => {
-            console.error('WebSocket error', error);
-            document.getElementById('output').textContent += `\nWebSocket error: ${error}`;
+        ws.onerror = (event) => {
+            console.error('WebSocket error', event);
+            document.getElementById('output').textContent += `\nWebSocket error: ${event.type}`;
+            if (event.message) {
+                document.getElementById('output').textContent += `\nError message: ${event.message}`;
+            }
+            if (event.error) {
+                document.getElementById('output').textContent += `\nError details: ${event.error}`;
+            }
         };
 
-        ws.onclose = () => {
-            console.log('WebSocket connection closed');
-            document.getElementById('output').textContent += '\nWebSocket connection closed';
+        ws.onclose = (event) => {
+            console.log('WebSocket connection closed', event);
+            document.getElementById('output').textContent += `\nWebSocket connection closed: ${event.code} - ${event.reason}`;
         };
     </script>
 </body>
