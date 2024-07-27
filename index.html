@@ -13,11 +13,10 @@
 
     <pre id="output"></pre>
     
-    <p>v0.0.0012 2024/07/27 09:28Z © korgast</p>
+    <p>v0.0.0013 2024/07/27 09:40Z © korgast</p>
 
-    <script>
-        // 修改为Infinite Flight设备的IP地址
-        const deviceIpAddress = '10.10.9.6'; // 替换为实际IP地址
+        <script>
+        const deviceIpAddress = '127.0.0.1'; // 使用本地主机地址
         const apiPort = 10112; // Connect API v2的端口
 
         function logMessage(message) {
@@ -25,42 +24,59 @@
             document.getElementById('output').textContent += `\n${message}`;
         }
 
-        // 创建WebSocket连接
-        const ws = new WebSocket(`ws://${deviceIpAddress}:${apiPort}`);
-
-        ws.onopen = () => {
-            logMessage('WebSocket connection opened');
-
-            // 请求航空器是否在地面状态
-            const request = {
-                Command: 'GetState',
-                Arguments: ['aircraft/0/is_on_ground']
-            };
-            ws.send(JSON.stringify(request));
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                logMessage(`Message from server: ${event.data}`);
-
-                if (message.Command === 'State' && message.State === 'aircraft/0/is_on_ground') {
-                    const isOnGround = message.Value;
-                    logMessage(`Aircraft is ${isOnGround ? 'on the ground' : 'in the air'}`);
-                }
-            } catch (error) {
-                logMessage(`Error parsing message: ${error}`);
-            }
-        };
-
-        ws.onerror = (event) => {
+        function logError(event) {
             logMessage('WebSocket error:');
-            logMessage(JSON.stringify(event, null, 2));
-        };
+            logMessage(`Event: ${event.type}`);
+            if (event.message) {
+                logMessage(`Error message: ${event.message}`);
+            }
+            if (event.error) {
+                logMessage(`Error details: ${event.error}`);
+            }
+            if (event.target && event.target.readyState === WebSocket.CLOSED) {
+                logMessage('WebSocket connection was closed.');
+            }
+        }
 
-        ws.onclose = (event) => {
-            logMessage(`WebSocket connection closed: ${event.code} - ${event.reason}`);
-        };
+        try {
+            const ws = new WebSocket(`ws://${deviceIpAddress}:${apiPort}`);
+
+            ws.onopen = () => {
+                logMessage('WebSocket connection opened');
+                const request = {
+                    Command: 'GetState',
+                    Arguments: ['aircraft/0/is_on_ground']
+                };
+                ws.send(JSON.stringify(request));
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    logMessage(`Message from server: ${event.data}`);
+
+                    if (message.Command === 'State' && message.State === 'aircraft/0/is_on_ground') {
+                        const isOnGround = message.Value;
+                        logMessage(`Aircraft is ${isOnGround ? 'on the ground' : 'in the air'}`);
+                    }
+                } catch (error) {
+                    logMessage(`Error parsing message: ${error}`);
+                }
+            };
+
+            ws.onerror = logError;
+            ws.onclose = (event) => {
+                logMessage(`WebSocket connection closed: ${event.code} - ${event.reason}`);
+            };
+
+        } catch (error) {
+            logMessage(`Exception: ${error.message}`);
+        }
+
+        window.addEventListener('error', (event) => {
+            logMessage('Window error event:');
+            logMessage(JSON.stringify(event, null, 2));
+        });
     </script>
 </body>
 </html>
