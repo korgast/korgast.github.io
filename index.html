@@ -13,19 +13,23 @@
 
     <pre id="output"></pre>
     
-    <p>v0.0.0011 2024/07/27 09:26Z © korgast</p>
+    <p>v0.0.0012 2024/07/27 09:28Z © korgast</p>
 
     <script>
         // 修改为Infinite Flight设备的IP地址
         const deviceIpAddress = '10.10.9.6'; // 替换为实际IP地址
         const apiPort = 10112; // Connect API v2的端口
 
+        function logMessage(message) {
+            console.log(message);
+            document.getElementById('output').textContent += `\n${message}`;
+        }
+
         // 创建WebSocket连接
         const ws = new WebSocket(`ws://${deviceIpAddress}:${apiPort}`);
 
         ws.onopen = () => {
-            console.log('WebSocket connection opened');
-            document.getElementById('output').textContent = 'WebSocket connection opened';
+            logMessage('WebSocket connection opened');
 
             // 请求航空器是否在地面状态
             const request = {
@@ -36,30 +40,26 @@
         };
 
         ws.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            console.log('Message from server', message);
-            document.getElementById('output').textContent += `\n${event.data}`;
+            try {
+                const message = JSON.parse(event.data);
+                logMessage(`Message from server: ${event.data}`);
 
-            if (message.Command === 'State' && message.State === 'aircraft/0/is_on_ground') {
-                const isOnGround = message.Value;
-                document.getElementById('output').textContent += `\nAircraft is ${isOnGround ? 'on the ground' : 'in the air'}`;
+                if (message.Command === 'State' && message.State === 'aircraft/0/is_on_ground') {
+                    const isOnGround = message.Value;
+                    logMessage(`Aircraft is ${isOnGround ? 'on the ground' : 'in the air'}`);
+                }
+            } catch (error) {
+                logMessage(`Error parsing message: ${error}`);
             }
         };
 
         ws.onerror = (event) => {
-            console.error('WebSocket error', event);
-            document.getElementById('output').textContent += `\nWebSocket error: ${event.type}`;
-            if (event.message) {
-                document.getElementById('output').textContent += `\nError message: ${event.message}`;
-            }
-            if (event.error) {
-                document.getElementById('output').textContent += `\nError details: ${event.error}`;
-            }
+            logMessage('WebSocket error:');
+            logMessage(JSON.stringify(event, null, 2));
         };
 
         ws.onclose = (event) => {
-            console.log('WebSocket connection closed', event);
-            document.getElementById('output').textContent += `\nWebSocket connection closed: ${event.code} - ${event.reason}`;
+            logMessage(`WebSocket connection closed: ${event.code} - ${event.reason}`);
         };
     </script>
 </body>
