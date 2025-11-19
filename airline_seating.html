@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Airline Seat Selection</title>
+    <style>
+      :root {
+        --seat-size: clamp(40px, 5vw, 60px);
+        --aisle-width: clamp(22px, 3.5vw, 34px);
+        --window-width: clamp(18px, 2.5vw, 32px);
+        --seat-gap: clamp(6px, 1vw, 12px);
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: #f8fafc;
+        background-color: #020617;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 32px 16px 48px;
+        background: radial-gradient(circle at top, #0f172a, #020617 65%);
+        color: inherit;
+      }
+
+      .page {
+        width: 100%;
+        max-width: 1100px;
+      }
+
+      h1 {
+        margin: 0 0 32px;
+        font-size: 30px;
+        text-align: center;
+        color: #f1f5f9;
+        letter-spacing: 0.8px;
+      }
+
+      .view {
+        background: #0b1220;
+        border-radius: 20px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        box-shadow: 0 25px 60px rgba(5, 10, 30, 0.65);
+        padding: 32px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .intro {
+        text-align: center;
+        color: #cbd5f5;
+        margin: 0 0 24px;
+      }
+
+      .plane-picker {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
+      }
+
+      .plane-btn,
+      .back-btn {
+        border: none;
+        border-radius: 999px;
+        padding: 14px 28px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #0b1220;
+        background: linear-gradient(135deg, #38bdf8, #6366f1);
+        box-shadow: 0 12px 30px rgba(56, 189, 248, 0.35);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .plane-btn:hover,
+      .back-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 36px rgba(99, 102, 241, 0.4);
+      }
+
+      .back-btn {
+        margin-bottom: 20px;
+        background: linear-gradient(135deg, #f472b6, #facc15);
+        color: #0f172a;
+      }
+
+      .seat-stage {
+        display: flex;
+        justify-content: center;
+      }
+
+      .card {
+        width: 100%;
+      }
+
+      .aircraft-header {
+        margin-bottom: 20px;
+      }
+
+      .aircraft-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .aircraft-subtitle {
+        font-size: 15px;
+        color: #94a3b8;
+        margin: 4px 0 0;
+      }
+
+      .cabin-section {
+        margin-bottom: 32px;
+      }
+
+      .cabin-section:last-child {
+        margin-bottom: 0;
+      }
+
+      .cabin-header {
+        font-size: 18px;
+        font-weight: 600;
+        color: #e2e8f0;
+        margin: 0 0 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .seat-stage {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .seat-map {
+        --col-row-label: 58px;
+        --col-window-left: var(--window-width);
+        --col-window-right: var(--window-width);
+        --col-A: var(--seat-size);
+        --col-B: var(--seat-size);
+        --col-C: var(--seat-size);
+        --col-aisle-1: var(--aisle-width);
+        --col-D: var(--seat-size);
+        --col-E: var(--seat-size);
+        --col-F: var(--seat-size);
+        --col-H: var(--seat-size);
+        --col-aisle-2: var(--aisle-width);
+        --col-J: var(--seat-size);
+        --col-K: var(--seat-size);
+        --col-L: var(--seat-size);
+        display: grid;
+        gap: var(--seat-gap) clamp(4px, 0.7vw, 8px);
+        justify-items: center;
+        align-items: stretch;
+        width: fit-content;
+        margin: 0 auto;
+        grid-template-columns:
+          var(--col-row-label)
+          var(--col-window-left)
+          var(--col-A)
+          var(--col-B)
+          var(--col-C)
+          var(--col-aisle-1)
+          var(--col-D)
+          var(--col-E)
+          var(--col-F)
+          var(--col-H)
+          var(--col-aisle-2)
+          var(--col-J)
+          var(--col-K)
+          var(--col-L)
+          var(--col-window-right);
+      }
+
+      .seat-map[data-plane="a320"] {
+        --col-window-left: calc(var(--window-width) + 2px);
+        --col-window-right: calc(var(--window-width) + 2px);
+        --col-A: var(--seat-size);
+        --col-B: var(--seat-size);
+        --col-C: var(--seat-size);
+        --col-aisle-1: calc(var(--aisle-width) + 2px);
+        --col-D: 0px;
+        --col-E: 0px;
+        --col-F: 0px;
+        --col-H: 0px;
+        --col-aisle-2: 0px;
+        --col-J: var(--seat-size);
+        --col-K: var(--seat-size);
+        --col-L: var(--seat-size);
+      }
+
+      .seat-map[data-plane="a330"] {
+        --col-window-left: var(--window-width);
+        --col-window-right: var(--window-width);
+        --col-A: var(--seat-size);
+        --col-B: 0px;
+        --col-C: var(--seat-size);
+        --col-aisle-1: calc(var(--aisle-width) - 2px);
+        --col-D: var(--seat-size);
+        --col-E: var(--seat-size);
+        --col-F: var(--seat-size);
+        --col-H: var(--seat-size);
+        --col-aisle-2: calc(var(--aisle-width) - 2px);
+        --col-J: var(--seat-size);
+        --col-K: 0px;
+        --col-L: var(--seat-size);
+      }
+
+      .row-label {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: #cbd5f5;
+        padding: 6px 0;
+        border: none;
+        background: transparent;
+      }
+
+      .row-label.header-cell {
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        color: #94a3b8;
+      }
+
+      .seat-header {
+        width: 100%;
+        text-align: center;
+        padding: 4px 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: #94a3b8;
+        white-space: nowrap;
+      }
+
+      .aisle-header,
+      .window-cell {
+        width: 100%;
+        height: 24px;
+      }
+
+      .window-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+      }
+
+      .window-cell::before {
+        content: "";
+        width: clamp(8px, 1.1vw, 14px);
+        height: clamp(17px, 1.8vw, 24px);
+        border-radius: 999px;
+        border: 1px solid rgba(125, 211, 252, 0.45);
+        background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.25),
+          rgba(59, 130, 246, 0.45)
+        );
+        box-shadow: inset 0 0 6px rgba(14, 165, 233, 0.35);
+      }
+
+      .window-cell.header::before {
+        display: none;
+      }
+
+      .seat {
+        width: var(--seat-size);
+        aspect-ratio: 3 / 4;
+        border-radius: 14px;
+        background: linear-gradient(160deg, #1e293b, #0f172a);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease,
+          border-color 0.15s ease, background 0.15s ease;
+        position: relative;
+        border: 2px solid rgba(148, 163, 184, 0.35);
+        color: #f8fafc;
+      }
+
+      .seat.business-class {
+        background: linear-gradient(160deg, #3b2e5a, #2d1f4a);
+        border-color: rgba(196, 181, 253, 0.5);
+        box-shadow: 0 8px 16px rgba(139, 92, 246, 0.2);
+      }
+
+      .seat.business-class.seat-occupied {
+        background: radial-gradient(circle at 30% 20%, #a78bfa, #5b21b6);
+        border-color: rgba(167, 139, 250, 0.7);
+        box-shadow: 0 12px 20px rgba(139, 92, 246, 0.35);
+      }
+
+      .seat.business-class-large {
+        width: calc(var(--seat-size) * 1.2);
+        min-width: calc(var(--seat-size) * 1.2);
+        aspect-ratio: 3 / 4;
+        background: linear-gradient(160deg, #3b2e5a, #2d1f4a);
+        border-color: rgba(196, 181, 253, 0.5);
+        box-shadow: 0 8px 16px rgba(139, 92, 246, 0.2);
+        z-index: 1;
+      }
+
+      .seat.business-class-large.seat-occupied {
+        background: radial-gradient(circle at 30% 20%, #a78bfa, #5b21b6);
+        border-color: rgba(167, 139, 250, 0.7);
+        box-shadow: 0 12px 20px rgba(139, 92, 246, 0.35);
+      }
+
+      .seat.business-class-large[data-seat-letter="A"],
+      .seat.business-class-large[data-seat-letter="J"] {
+        justify-self: start;
+        margin-left: 0;
+      }
+
+      .seat.business-class-large[data-seat-letter="C"],
+      .seat.business-class-large[data-seat-letter="L"] {
+        justify-self: end;
+        margin-right: 0;
+      }
+
+      /* A330 business class adjustments */
+      .seat-map[data-plane="a330"][data-cabin="business"] {
+        --col-aisle-1: calc(var(--aisle-width) + 8px);
+        --col-aisle-2: calc(var(--aisle-width) + 8px);
+        --col-A: calc(var(--seat-size) + 4px);
+        --col-C: calc(var(--seat-size) + 4px);
+        --col-J: calc(var(--seat-size) + 4px);
+        --col-L: calc(var(--seat-size) + 4px);
+      }
+
+      .seat-map[data-plane="a330"] .seat.business-class-large[data-seat-letter="D"],
+      .seat-map[data-plane="a330"] .seat.business-class-large[data-seat-letter="H"] {
+        width: calc(var(--seat-size) * 1.2);
+        min-width: calc(var(--seat-size) * 1.2);
+        aspect-ratio: 3 / 4;
+      }
+
+      .seat-occupied {
+        background: radial-gradient(circle at 30% 20%, #60a5fa, #312e81);
+        border-color: rgba(56, 189, 248, 0.65);
+        box-shadow: 0 10px 18px rgba(14, 165, 233, 0.25);
+      }
+
+      .seat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 18px rgba(14, 165, 233, 0.35);
+        border-color: #38bdf8;
+      }
+
+      .seat-avatar {
+        width: 26px;
+        height: 34px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .avatar-head {
+        width: 22px;
+        height: 22px;
+        background: radial-gradient(circle at 30% 30%, #f8fafc, #cbd5f5);
+        border-radius: 999px;
+        border: 1px solid rgba(15, 23, 42, 0.15);
+        box-shadow: inset 0 0 4px rgba(15, 23, 42, 0.3);
+      }
+
+      .avatar-body {
+        width: 28px;
+        height: 16px;
+        background: linear-gradient(120deg, rgba(148, 197, 255, 0.9), #60a5fa);
+        border-radius: 14px 14px 18px 18px;
+        border: 1px solid rgba(15, 23, 42, 0.2);
+      }
+
+      .seat.unoccupied::after {
+        content: "";
+      }
+
+      .void-seat {
+        opacity: 0;
+        pointer-events: none;
+        border: none;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .aisle {
+        width: 100%;
+        height: 100%;
+        min-height: 52px;
+        border-radius: 12px;
+        border: 2px dashed rgba(148, 163, 184, 0.4);
+        margin: 0 auto;
+        pointer-events: none;
+        justify-self: center;
+      }
+
+      .row-gap {
+        grid-column: 1 / -1;
+        height: clamp(80px, 14vw, 140px);
+      }
+
+      .column-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .manifest-card {
+        margin-top: 32px;
+        border-radius: 16px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        background: rgba(15, 23, 42, 0.55);
+        overflow: hidden;
+      }
+
+      .manifest-card details {
+        padding: 0;
+        display: block;
+      }
+
+      .manifest-card summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 18px 24px;
+        font-weight: 600;
+        font-size: 16px;
+        color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .manifest-card summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .manifest-card summary span {
+        color: #94a3b8;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .manifest-body {
+        padding: 0 24px 24px;
+      }
+
+      .manifest-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        color: #e2e8f0;
+      }
+
+      .manifest-table th {
+        text-align: left;
+        font-weight: 600;
+        color: #94a3b8;
+        padding: 12px 8px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      .manifest-table td {
+        padding: 10px 8px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      }
+
+      .manifest-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .manifest-empty {
+        padding: 12px 0;
+        color: #94a3b8;
+        font-style: italic;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.75);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+        backdrop-filter: blur(3px);
+      }
+
+      .modal {
+        background: #0f172a;
+        padding: 28px 36px;
+        border-radius: 18px;
+        min-width: 260px;
+        text-align: center;
+        box-shadow: 0 20px 55px rgba(2, 6, 23, 0.65);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+      }
+
+      .modal h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        color: #f8fafc;
+      }
+
+      .modal button {
+        margin-top: 12px;
+        padding: 10px 24px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #2563eb, #0ea5e9);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        letter-spacing: 0.4px;
+        box-shadow: 0 8px 20px rgba(14, 165, 233, 0.35);
+      }
+
+      @media (max-width: 900px) {
+        .view {
+          padding: 28px 20px;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .plane-picker {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <h1>Airline Seat Selection</h1>
+
+      <section id="homeView" class="view">
+        <p class="intro">Choose an aircraft to view its live cabin map.</p>
+        <div class="plane-picker">
+          <button class="plane-btn" data-plane-button="a320">Airbus A320</button>
+          <button class="plane-btn" data-plane-button="a330">Airbus A330</button>
+        </div>
+      </section>
+
+      <section id="seatView" class="view hidden" aria-live="polite">
+        <button id="backBtn" class="back-btn" type="button">← Back to aircraft list</button>
+        <div id="seatStage" class="seat-stage"></div>
+      </section>
+    </main>
+
+    <div id="modalBackdrop" class="modal-backdrop">
+      <div class="modal">
+        <h2>Seat Details</h2>
+        <p id="seatLabel"></p>
+        <button type="button" onclick="toggleModal(false)">Close</button>
+      </div>
+    </div>
+
+    <script>
+      const homeView = document.getElementById("homeView");
+      const seatView = document.getElementById("seatView");
+      const seatStage = document.getElementById("seatStage");
+      const backBtn = document.getElementById("backBtn");
+      const seatLabel = document.getElementById("seatLabel");
+      const modalBackdrop = document.getElementById("modalBackdrop");
+
+      const columnOrder = [
+        { key: "window-left", type: "window" },
+        { key: "A", type: "seat", label: "A" },
+        { key: "B", type: "seat", label: "B" },
+        { key: "C", type: "seat", label: "C" },
+        { key: "aisle-1", type: "aisle" },
+        { key: "D", type: "seat", label: "D" },
+        { key: "E", type: "seat", label: "E" },
+        { key: "F", type: "seat", label: "F" },
+        { key: "H", type: "seat", label: "H" },
+        { key: "aisle-2", type: "aisle" },
+        { key: "J", type: "seat", label: "J" },
+        { key: "K", type: "seat", label: "K" },
+        { key: "L", type: "seat", label: "L" },
+        { key: "window-right", type: "window" },
+      ];
+
+      const commonLastNames = [
+        "Smith",
+        "Johnson",
+        "Williams",
+        "Brown",
+        "Jones",
+        "Garcia",
+        "Miller",
+        "Davis",
+        "Rodriguez",
+        "Martinez",
+        "Hernandez",
+        "Lopez",
+        "Gonzalez",
+        "Wilson",
+        "Anderson",
+        "Thomas",
+        "Taylor",
+        "Moore",
+        "Jackson",
+        "Martin",
+        "Lee",
+        "Perez",
+        "Thompson",
+        "White",
+        "Harris",
+        "Sanchez",
+        "Clark",
+        "Ramirez",
+        "Lewis",
+        "Robinson",
+        "Walker",
+        "Young",
+        "Allen",
+        "King",
+        "Wright",
+        "Scott",
+        "Torres",
+        "Nguyen",
+        "Hill",
+        "Flores",
+        "Green",
+        "Adams",
+        "Nelson",
+        "Baker",
+        "Hall",
+        "Rivera",
+        "Campbell",
+        "Mitchell",
+        "Carter",
+        "Roberts",
+        "Gomez",
+        "Phillips",
+        "Evans",
+        "Turner",
+        "Diaz",
+        "Parker",
+        "Cruz",
+        "Edwards",
+        "Collins",
+        "Reyes",
+        "Stewart",
+        "Morris",
+        "Morales",
+        "Murphy",
+        "Cook",
+        "Rogers",
+        "Gutierrez",
+        "Ortiz",
+        "Morgan",
+        "Cooper",
+        "Peterson",
+        "Bailey",
+        "Reed",
+        "Kelly",
+        "Howard",
+        "Ramos",
+        "Kim",
+        "Cox",
+        "Ward",
+        "Richardson",
+        "Watson",
+        "Brooks",
+        "Chavez",
+        "Wood",
+        "James",
+        "Bennett",
+        "Gray",
+        "Mendoza",
+        "Ruiz",
+        "Hughes",
+        "Price",
+        "Alvarez",
+        "Castillo",
+        "Sanders",
+        "Patel",
+        "Myers",
+        "Long",
+        "Ross",
+        "Foster",
+        "Jimenez",
+      ];
+
+      const commonMaleNames = [
+        "Liam",
+        "Noah",
+        "Oliver",
+        "James",
+        "Elijah",
+        "Mateo",
+        "William",
+        "Henry",
+        "Lucas",
+        "Benjamin",
+        "Theodore",
+        "Levi",
+        "Sebastian",
+        "Jack",
+        "Owen",
+        "Alexander",
+        "Daniel",
+        "Michael",
+        "Leo",
+        "Mason",
+        "Ethan",
+        "Ezra",
+        "John",
+        "Hudson",
+        "Luca",
+        "Aiden",
+        "Joseph",
+        "David",
+        "Jacob",
+        "Logan",
+        "Samuel",
+        "Luke",
+        "Julian",
+        "Gabriel",
+        "Grayson",
+        "Wyatt",
+        "Matthew",
+        "Maverick",
+        "Dylan",
+        "Isaac",
+        "Elias",
+        "Anthony",
+        "Thomas",
+        "Jayden",
+        "Carter",
+        "Santiago",
+        "Ezekiel",
+        "Charles",
+        "Josiah",
+        "Caleb",
+        "Cooper",
+        "Lincoln",
+        "Miles",
+        "Christopher",
+        "Isaiah",
+        "Nathan",
+        "Kai",
+        "Joshua",
+        "Andrew",
+        "Angel",
+        "Adrian",
+        "Cameron",
+        "Nolan",
+        "Waylon",
+        "Jaxon",
+        "Roman",
+        "Eli",
+        "Wesley",
+        "Aaron",
+        "Ian",
+        "Christian",
+        "Ryan",
+        "Leonardo",
+        "Brooks",
+        "Axel",
+        "Walker",
+        "Jonathan",
+        "Easton",
+        "Everett",
+        "Weston",
+        "Bennett",
+        "Robert",
+        "Jameson",
+        "Landon",
+        "Silas",
+        "Jose",
+        "Beau",
+        "Micah",
+        "Colton",
+        "Jordan",
+        "Jeremiah",
+        "Parker",
+        "Greyson",
+        "Rowan",
+        "Adam",
+        "Nicholas",
+        "Theo",
+        "Xavier",
+        "Hunter",
+      ];
+
+      const commonFemaleNames = [
+        "Olivia",
+        "Emma",
+        "Charlotte",
+        "Amelia",
+        "Sophia",
+        "Mia",
+        "Isabella",
+        "Ava",
+        "Evelyn",
+        "Luna",
+        "Harper",
+        "Camila",
+        "Sofia",
+        "Scarlett",
+        "Elizabeth",
+        "Eleanor",
+        "Emily",
+        "Chloe",
+        "Mila",
+        "Violet",
+        "Penelope",
+        "Gianna",
+        "Aria",
+        "Layla",
+        "Abigail",
+        "Ellie",
+        "Nora",
+        "Hazel",
+        "Zoey",
+        "Riley",
+        "Victoria",
+        "Lily",
+        "Aurora",
+        "Nova",
+        "Hannah",
+        "Emilia",
+        "Zoe",
+        "Stella",
+        "Everly",
+        "Isla",
+        "Leah",
+        "Lillian",
+        "Addison",
+        "Willow",
+        "Lucy",
+        "Paisley",
+        "Natalie",
+        "Naomi",
+        "Eliana",
+        "Brooklyn",
+        "Elena",
+        "Aubrey",
+        "Claire",
+        "Ivy",
+        "Kinsley",
+        "Audrey",
+        "Maya",
+        "Genesis",
+        "Skylar",
+        "Bella",
+        "Aaliyah",
+        "Madelyn",
+        "Savannah",
+        "Anna",
+        "Delilah",
+        "Serenity",
+        "Caroline",
+        "Kennedy",
+        "Valentina",
+        "Ruby",
+        "Sophie",
+        "Alice",
+        "Gabriella",
+        "Sadie",
+        "Ariana",
+        "Allison",
+        "Hailey",
+        "Autumn",
+        "Nevaeh",
+        "Natalia",
+        "Quinn",
+        "Josephine",
+        "Sarah",
+        "Cora",
+        "Emery",
+        "Samantha",
+        "Piper",
+        "Leilani",
+        "Eva",
+        "Everleigh",
+        "Madeline",
+        "Lydia",
+        "Jade",
+        "Peyton",
+        "Brielle",
+        "Adeline",
+        "Khloe",
+        "Melody",
+      ];
+
+      const aircraftConfigs = {
+        a320: {
+          id: "a320",
+          name: "Airbus A320",
+          subtitle: "Business Class (6-7) 2-2 layout, Economy (31-57) 3-3",
+          sections: [
+            {
+              type: "rows",
+              start: 6,
+              end: 7,
+              pattern: () => ({
+                seats: ["A", "C", "J", "L"],
+                secondAisle: false,
+                businessClass: true,
+                businessClassLarge: true,
+              }),
+            },
+            {
+              type: "rows",
+              start: 31,
+              end: 57,
+              pattern: () => ({
+                seats: ["A", "B", "C", "J", "K", "L"],
+                secondAisle: false,
+                businessClass: false,
+              }),
+            },
+          ],
+        },
+        a330: {
+          id: "a330",
+          name: "Airbus A330",
+          subtitle: "Business Class (6-12) 2-2-2 layout, Economy (30-78) 2-4-2 to 2-3-2 transition",
+          sections: [
+            {
+              type: "rows",
+              start: 6,
+              end: 11,
+              pattern: () => ({
+                seats: ["A", "C", "D", "H", "J", "L"],
+                secondAisle: true,
+                businessClass: true,
+                businessClassLarge: true,
+              }),
+            },
+            {
+              type: "rows",
+              start: 12,
+              end: 12,
+              pattern: () => ({
+                seats: ["D", "H"],
+                secondAisle: true,
+                businessClass: true,
+                businessClassLarge: true,
+              }),
+            },
+            {
+              type: "rows",
+              start: 30,
+              end: 48,
+              pattern: () => ({
+                seats: ["A", "C", "D", "E", "F", "H", "J", "L"],
+                secondAisle: true,
+              }),
+            },
+            { type: "gap" },
+            {
+              type: "rows",
+              start: 61,
+              end: 72,
+              pattern: () => ({
+                seats: ["A", "C", "D", "E", "F", "H", "J", "L"],
+                secondAisle: true,
+              }),
+            },
+            {
+              type: "rows",
+              start: 73,
+              end: 76,
+              pattern: () => ({
+                seats: ["A", "C", "E", "F", "H", "J", "L"],
+                secondAisle: true,
+              }),
+            },
+            {
+              type: "rows",
+              start: 77,
+              end: 78,
+              pattern: () => ({
+                seats: ["E", "F", "H"],
+                secondAisle: true,
+              }),
+            },
+          ],
+        },
+      };
+
+      const seatAssignments = {};
+      const configLookup = Object.values(aircraftConfigs).reduce((acc, cfg) => {
+        acc[cfg.id] = cfg;
+        return acc;
+      }, {});
+
+      document.querySelectorAll("[data-plane-button]").forEach((btn) => {
+        btn.addEventListener("click", () => openSeatPlan(btn.dataset.planeButton));
+      });
+
+      backBtn.addEventListener("click", () => {
+        seatStage.innerHTML = "";
+        seatView.classList.add("hidden");
+        homeView.classList.remove("hidden");
+      });
+
+      function openSeatPlan(aircraftId) {
+        const config = configLookup[aircraftId];
+        if (!config) return;
+        if (!seatAssignments[aircraftId]) {
+          seatAssignments[aircraftId] = generatePassengerAssignments(config);
+        }
+        seatStage.innerHTML = "";
+        seatStage.appendChild(renderAircraft(config));
+        homeView.classList.add("hidden");
+        seatView.classList.remove("hidden");
+      }
+
+      function renderAircraft(config) {
+        const card = document.createElement("section");
+        card.className = "card aircraft-card";
+
+        const header = document.createElement("div");
+        header.className = "aircraft-header";
+        header.innerHTML = `
+          <p class="aircraft-title">${config.name}</p>
+          <p class="aircraft-subtitle">${config.subtitle}</p>
+        `;
+        card.appendChild(header);
+
+        const businessSections = config.sections.filter(
+          (s) => s.type === "rows" && s.pattern(s.start)?.businessClass
+        );
+        const economySections = config.sections.filter(
+          (s) => s.type === "gap" || (s.type === "rows" && !s.pattern(s.start)?.businessClass)
+        );
+        const allActiveColumns = deriveActiveColumns(config);
+
+        if (businessSections.length > 0) {
+          const bizSection = document.createElement("div");
+          bizSection.className = "cabin-section";
+          const bizHeader = document.createElement("h2");
+          bizHeader.className = "cabin-header";
+          bizHeader.textContent = "Business Class";
+          bizSection.appendChild(bizHeader);
+          const bizMap = document.createElement("div");
+          bizMap.className = "seat-map";
+          bizMap.dataset.plane = config.id;
+          if (config.id === "a330") bizMap.dataset.cabin = "business";
+          bizSection.appendChild(bizMap);
+          addSeatHeaders(bizMap, allActiveColumns);
+          businessSections.forEach((s) => {
+            for (let r = s.start; r <= s.end; r++) {
+              renderRow(bizMap, config.id, r, s.pattern(r), allActiveColumns);
+            }
+          });
+          card.appendChild(bizSection);
+        }
+
+        if (economySections.length > 0) {
+          const econSection = document.createElement("div");
+          econSection.className = "cabin-section";
+          const econHeader = document.createElement("h2");
+          econHeader.className = "cabin-header";
+          econHeader.textContent = "Economy Class";
+          econSection.appendChild(econHeader);
+          const econMap = document.createElement("div");
+          econMap.className = "seat-map";
+          econMap.dataset.plane = config.id;
+          econSection.appendChild(econMap);
+          addSeatHeaders(econMap, allActiveColumns);
+          economySections.forEach((s) => {
+            if (s.type === "gap") {
+              const gap = document.createElement("div");
+              gap.className = "row-gap";
+              gap.setAttribute("aria-hidden", "true");
+              econMap.appendChild(gap);
+            } else {
+              for (let r = s.start; r <= s.end; r++) {
+                renderRow(econMap, config.id, r, s.pattern(r), allActiveColumns);
+              }
+            }
+          });
+          card.appendChild(econSection);
+        }
+
+        const manifestSection = renderManifestSection(
+          config,
+          seatAssignments[config.id] || {}
+        );
+        card.appendChild(manifestSection);
+
+        return card;
+      }
+
+      function renderRow(seatMap, aircraftId, rowNumber, pattern, activeColumns) {
+        const rowLabel = document.createElement("div");
+        rowLabel.className = "row-label";
+        rowLabel.textContent = rowNumber;
+        seatMap.appendChild(rowLabel);
+
+        const isA330Biz = aircraftId === "a330" && pattern.businessClass;
+
+        columnOrder.forEach((col) => {
+          if (!activeColumns[col.key]) {
+            seatMap.appendChild(createFiller(col.type === "seat"));
+            return;
+          }
+
+          if (col.type === "window") {
+            const w = document.createElement("div");
+            w.className = "window-cell";
+            w.setAttribute("aria-hidden", "true");
+            seatMap.appendChild(w);
+            return;
+          }
+
+          if (col.type === "aisle") {
+            const a = document.createElement("div");
+            a.className = "aisle";
+            if (col.key === "aisle-2" && !pattern.secondAisle) {
+              a.classList.add("void-seat");
+            }
+            seatMap.appendChild(a);
+            return;
+          }
+
+          const letter = col.label;
+
+          // A330 business: hide D and H columns, show D seat in E position, H seat in F position
+          if (isA330Biz && (letter === "D" || letter === "H")) {
+            seatMap.appendChild(createFiller(true));
+            return;
+          }
+
+          if (isA330Biz && letter === "E" && pattern.seats.includes("D")) {
+            seatMap.appendChild(createSeat(aircraftId, rowNumber, "D", pattern, false));
+            return;
+          }
+
+          if (isA330Biz && letter === "F" && pattern.seats.includes("H")) {
+            seatMap.appendChild(createSeat(aircraftId, rowNumber, "H", pattern, false));
+            return;
+          }
+
+          if (!pattern.seats.includes(letter)) {
+            seatMap.appendChild(createFiller(true));
+            return;
+          }
+
+          seatMap.appendChild(createSeat(aircraftId, rowNumber, letter, pattern, false));
+        });
+      }
+
+      function createFiller(isSeat) {
+        const f = document.createElement("div");
+        f.className = isSeat ? "seat void-seat column-hidden" : "column-hidden";
+        f.setAttribute("aria-hidden", "true");
+        return f;
+      }
+
+      function createSeat(aircraftId, rowNumber, letter, pattern, isSpan) {
+        const seat = document.createElement("button");
+        seat.className = "seat";
+        if (pattern.businessClass) {
+          seat.className += pattern.businessClassLarge ? " business-class-large" : " business-class";
+          if (pattern.businessClassLarge) seat.dataset.seatLetter = letter;
+        }
+        seat.type = "button";
+        const code = `${rowNumber}${letter}`;
+        seat.addEventListener("click", () => showSeat(aircraftId, code));
+        updateSeatVisual(seat, aircraftId, code);
+        return seat;
+      }
+
+      function addSeatHeaders(seatMap, activeColumns) {
+        const headerLabel = document.createElement("div");
+        headerLabel.className = "row-label header-cell";
+        headerLabel.textContent = "";
+        seatMap.appendChild(headerLabel);
+
+        const isA330Biz = seatMap.dataset.plane === "a330" && seatMap.dataset.cabin === "business";
+
+        columnOrder.forEach((column) => {
+          if (!activeColumns[column.key]) {
+            const spacer = document.createElement("div");
+            spacer.className = "column-hidden";
+            spacer.setAttribute("aria-hidden", "true");
+            seatMap.appendChild(spacer);
+            return;
+          }
+
+          if (column.type === "seat") {
+            const header = document.createElement("div");
+            header.className = "seat-header";
+            // A330 business: rename E to D, F to H, hide D and H
+            if (isA330Biz && column.label === "D") {
+              header.className += " column-hidden";
+              header.setAttribute("aria-hidden", "true");
+            } else if (isA330Biz && column.label === "E") {
+              header.textContent = "D";
+            } else if (isA330Biz && column.label === "F") {
+              header.textContent = "H";
+            } else if (isA330Biz && column.label === "H") {
+              header.className += " column-hidden";
+              header.setAttribute("aria-hidden", "true");
+            } else {
+              header.textContent = column.label;
+            }
+            seatMap.appendChild(header);
+          } else {
+            const spacer = document.createElement("div");
+            spacer.className =
+              column.type === "window" ? "window-cell header" : "aisle-header";
+            spacer.setAttribute("aria-hidden", "true");
+            seatMap.appendChild(spacer);
+          }
+        });
+      }
+
+      function deriveActiveColumns(config) {
+        const active = columnOrder.reduce((acc, column) => {
+          if (column.type === "window") {
+            acc[column.key] = true;
+          } else if (column.type === "aisle") {
+            acc[column.key] = column.key === "aisle-1";
+          } else {
+            acc[column.key] = false;
+          }
+          return acc;
+        }, {});
+
+        config.sections.forEach((section) => {
+          if (section.type !== "rows") return;
+          for (let row = section.start; row <= section.end; row++) {
+            const pattern = section.pattern(row);
+            pattern.seats.forEach((seat) => {
+              active[seat] = true;
+            });
+            if (pattern.secondAisle) {
+              active["aisle-2"] = true;
+            }
+          }
+        });
+
+        return active;
+      }
+
+      function renderManifestSection(config, assignments) {
+        const manifestData = buildManifestData(assignments);
+
+        const container = document.createElement("section");
+        container.className = "manifest-card";
+
+        const details = document.createElement("details");
+        details.dataset.plane = config.id;
+
+        const summary = document.createElement("summary");
+        const countLabel =
+          manifestData.length > 0
+            ? `${manifestData.length} passengers`
+            : "No passengers";
+        summary.innerHTML = `Flight manifest <span>${countLabel}</span>`;
+        details.appendChild(summary);
+
+        const body = document.createElement("div");
+        body.className = "manifest-body";
+
+        if (!manifestData.length) {
+          const empty = document.createElement("p");
+          empty.className = "manifest-empty";
+          empty.textContent = "No passengers assigned yet.";
+          body.appendChild(empty);
+        } else {
+          const table = document.createElement("table");
+          table.className = "manifest-table";
+
+          const thead = document.createElement("thead");
+          thead.innerHTML = `
+            <tr>
+              <th>Seat</th>
+              <th>Name</th>
+              <th>Gender</th>
+              <th>Age</th>
+            </tr>
+          `;
+
+          const tbody = document.createElement("tbody");
+          manifestData.forEach((entry) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${entry.seat}</td>
+              <td>${entry.fullName}</td>
+              <td>${entry.gender}</td>
+              <td>${entry.age}</td>
+            `;
+            tbody.appendChild(row);
+          });
+
+          table.appendChild(thead);
+          table.appendChild(tbody);
+          body.appendChild(table);
+        }
+
+        details.appendChild(body);
+        container.appendChild(details);
+        return container;
+      }
+
+      function buildManifestData(assignments) {
+        return Object.entries(assignments)
+          .filter(([, passenger]) => passenger)
+          .map(([seat, passenger]) => ({
+            seat,
+            ...passenger,
+          }))
+          .sort((a, b) => {
+            const [rowA, letterA] = parseSeatCode(a.seat);
+            const [rowB, letterB] = parseSeatCode(b.seat);
+            if (rowA !== rowB) return rowA - rowB;
+            return letterA.localeCompare(letterB);
+          });
+      }
+
+      function parseSeatCode(code) {
+        const match = code.match(/(\d+)([A-Z]+)/);
+        if (!match) return [0, code];
+        return [parseInt(match[1], 10), match[2]];
+      }
+
+      function showSeat(aircraftId, code) {
+        const passenger = seatAssignments[aircraftId]?.[code];
+        seatLabel.innerHTML = passenger
+          ? `
+          <div><strong>Seat:</strong> ${code}</div>
+          <div><strong>Name:</strong> ${passenger.fullName}</div>
+          <div><strong>Gender:</strong> ${passenger.gender}</div>
+          <div><strong>Age:</strong> ${passenger.age}</div>
+        `
+          : `
+          <div><strong>Seat:</strong> ${code}</div>
+          <div>This seat is currently available.</div>
+        `;
+        toggleModal(true);
+      }
+
+      function toggleModal(show) {
+        modalBackdrop.style.display = show ? "flex" : "none";
+      }
+
+      modalBackdrop.addEventListener("click", (event) => {
+        if (event.target === modalBackdrop) {
+          toggleModal(false);
+        }
+      });
+
+      function generatePassengerAssignments(config) {
+        const assignments = {};
+        const occupancyRate = 0.78;
+
+        config.sections.forEach((section) => {
+          if (section.type !== "rows") return;
+          for (let row = section.start; row <= section.end; row++) {
+            const pattern = section.pattern(row);
+            pattern.seats.forEach((letter) => {
+              const code = `${row}${letter}`;
+              assignments[code] =
+                Math.random() < occupancyRate ? createRandomPassenger() : null;
+            });
+          }
+        });
+
+        return assignments;
+      }
+
+      function createRandomPassenger() {
+        const gender = Math.random() < 0.5 ? "M" : "F";
+        const firstName =
+          gender === "M"
+            ? getRandom(commonMaleNames)
+            : getRandom(commonFemaleNames);
+        const lastName = getRandom(commonLastNames);
+
+        return {
+          fullName: `${firstName} ${lastName}`,
+          gender,
+          age: randomAge(18, 75),
+        };
+      }
+
+      function getRandom(list) {
+        return list[Math.floor(Math.random() * list.length)];
+      }
+
+      function randomAge(min, max) {
+        const range = max - min + 1;
+        return Math.floor(Math.random() * range) + min;
+      }
+
+      function updateSeatVisual(seat, aircraftId, code) {
+        const passenger = seatAssignments[aircraftId]?.[code];
+        if (passenger) {
+          seat.classList.add("seat-occupied");
+          seat.innerHTML = `
+            <div class="seat-avatar" aria-hidden="true">
+              <span class="avatar-head"></span>
+              <span class="avatar-body"></span>
+            </div>
+          `;
+        } else {
+          seat.classList.remove("seat-occupied");
+          seat.textContent = "";
+        }
+      }
+    </script>
+  </body>
+</html>
+
